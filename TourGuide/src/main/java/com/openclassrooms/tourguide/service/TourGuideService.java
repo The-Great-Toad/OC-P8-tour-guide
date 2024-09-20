@@ -1,5 +1,6 @@
 package com.openclassrooms.tourguide.service;
 
+import com.openclassrooms.tourguide.NearbyAttractionDTO;
 import com.openclassrooms.tourguide.helper.InternalTestHelper;
 import com.openclassrooms.tourguide.tracker.Tracker;
 import com.openclassrooms.tourguide.user.User;
@@ -7,14 +8,7 @@ import com.openclassrooms.tourguide.user.UserReward;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -60,9 +54,7 @@ public class TourGuideService {
 	}
 
 	public VisitedLocation getUserLocation(User user) {
-		VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ? user.getLastVisitedLocation()
-				: trackUserLocation(user);
-		return visitedLocation;
+        return (!user.getVisitedLocations().isEmpty()) ? user.getLastVisitedLocation() : trackUserLocation(user);
 	}
 
 	public User getUser(String userName) {
@@ -95,15 +87,49 @@ public class TourGuideService {
 		return visitedLocation;
 	}
 
-	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
-		List<Attraction> nearbyAttractions = new ArrayList<>();
-		for (Attraction attraction : gpsUtil.getAttractions()) {
-			if (rewardsService.isWithinAttractionProximity(attraction, visitedLocation.location)) {
-				nearbyAttractions.add(attraction);
-			}
+//	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
+//		List<Attraction> nearbyAttractions = new ArrayList<>();
+//		for (Attraction attraction : gpsUtil.getAttractions()) {
+//			if (rewardsService.isWithinAttractionProximity(attraction, visitedLocation.location)) {
+//				nearbyAttractions.add(attraction);
+//			}
+//		}
+//
+//		return nearbyAttractions;
+//	}
+
+	public List<NearbyAttractionDTO> getNearByAttractions(VisitedLocation visitedLocation, User user) {
+		List<NearbyAttractionDTO> nearbyAttractionsDTO = new ArrayList<>();
+		List<Attraction> allAttractions = gpsUtil.getAttractions();
+
+		/* Trier les attractions par distance par rapport à l'utilisateur */
+		allAttractions.sort(
+				Comparator.comparingDouble(
+						attraction -> rewardsService.getDistance(attraction, visitedLocation.location)
+				)
+		);
+
+		/* Récupérer les 5 attractions les plus proches */
+		for (int i = 0; i < 5; i++) {
+			Attraction attraction = allAttractions.get(i);
+
+			/* Calcule la distance entre l'attraction et l'utilisateur */
+			double distance = rewardsService.getDistance(attraction, visitedLocation.location);
+
+			int rewardPoints = rewardsService.getRewardPoints(attraction, user);
+
+			nearbyAttractionsDTO.add(new NearbyAttractionDTO(
+					attraction.attractionName,
+					attraction.latitude,
+					attraction.longitude,
+					visitedLocation.location.latitude,
+					visitedLocation.location.longitude,
+					distance,
+					rewardPoints
+			));
 		}
 
-		return nearbyAttractions;
+		return nearbyAttractionsDTO;
 	}
 
 	private void addShutDownHook() {
