@@ -9,6 +9,8 @@ import com.openclassrooms.tourguide.user.UserReward;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -72,11 +74,33 @@ public class TourGuideService {
 	}
 
 	public List<Provider> getTripDeals(User user) {
-		int cumulatativeRewardPoints = user.getUserRewards().stream().mapToInt(i -> i.getRewardPoints()).sum();
-		List<Provider> providers = tripPricer.getPrice(tripPricerApiKey, user.getUserId(),
-				user.getUserPreferences().getNumberOfAdults(), user.getUserPreferences().getNumberOfChildren(),
-				user.getUserPreferences().getTripDuration(), cumulatativeRewardPoints);
-		user.setTripDeals(providers);
+		/* Sum up all user's reward points */
+		int cumulativeRewardPoints = user.getUserRewards().stream()
+				.mapToInt(UserReward::getRewardPoints)
+				.sum();
+
+		CompletableFuture<List<Provider>> futureProviders = new CompletableFuture<>();
+		futureProviders.completeAsync(() -> tripPricer.getPrice(
+                tripPricerApiKey,
+                user.getUserId(),
+                user.getUserPreferences().getNumberOfAdults(),
+                user.getUserPreferences().getNumberOfChildren(),
+                user.getUserPreferences().getTripDuration(),
+                cumulativeRewardPoints
+        ));
+
+        List<Provider> providers;
+        try {
+            providers = futureProviders.get();
+			logger.info("Got {} providers", providers.size());
+
+        } catch (InterruptedException | ExecutionException e) {
+            logger.error("TourGuideService.getTripDeals error : {}", e.getMessage());
+            throw new RuntimeException(e);
+        }
+
+        user.setTripDeals(providers);
+
 		return providers;
 	}
 
@@ -85,6 +109,21 @@ public class TourGuideService {
 		user.addToVisitedLocations(visitedLocation);
 		rewardsService.calculateRewards(user);
 		return visitedLocation;
+	}
+
+	public CompletableFuture<VisitedLocation> trackUserLocationAsync(User user) {
+		/* Asynchronously fetch the user's location */
+		CompletableFuture<VisitedLocation> visitedLocationFuture = CompletableFuture.supplyAsync(
+				() -> gpsUtil.getUserLocation(user.getUserId())
+		);
+
+		/* Once visitedLocation is fetched, asynchronously calculate rewards */
+		return visitedLocationFuture.thenApplyAsync(visitedLocation -> {
+			user.addToVisitedLocations(visitedLocation);
+			rewardsService.calculateRewards(user);
+
+			return visitedLocation;
+		});
 	}
 
 //	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
@@ -102,18 +141,18 @@ public class TourGuideService {
 		List<NearbyAttractionDTO> nearbyAttractionsDTO = new ArrayList<>();
 		List<Attraction> allAttractions = gpsUtil.getAttractions();
 
-		/* Trier les attractions par distance par rapport à l'utilisateur */
+		/* Sort attractions by their distance from user's location in ASC */
 		allAttractions.sort(
 				Comparator.comparingDouble(
 						attraction -> rewardsService.getDistance(attraction, visitedLocation.location)
 				)
 		);
 
-		/* Récupérer les 5 attractions les plus proches */
+		/* Get the 5 closest attractions */
 		for (int i = 0; i < 5; i++) {
 			Attraction attraction = allAttractions.get(i);
 
-			/* Calcule la distance entre l'attraction et l'utilisateur */
+			/* Calculate distance between attraction and user's location */
 			double distance = rewardsService.getDistance(attraction, visitedLocation.location);
 
 			int rewardPoints = rewardsService.getRewardPoints(attraction, user);
