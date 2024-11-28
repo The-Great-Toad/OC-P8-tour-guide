@@ -20,7 +20,11 @@
 		<java.version>17</java.version>
 		<surefire.version>3.5.0</surefire.version>
 		<jacoco.version>0.8.12</jacoco.version>
+		<sonar.projectKey>oc-p8-tourguide</sonar.projectKey>
+		<sonar.projectName>oc-p8-tourguide</sonar.projectName>
+		<sonar.qualitygate.wait>true</sonar.qualitygate.wait>
 	</properties>
+
 
 	<dependencies>
 		<dependency>
