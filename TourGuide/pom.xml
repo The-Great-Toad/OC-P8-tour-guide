@@ -20,9 +20,8 @@
 		<java.version>17</java.version>
 		<surefire.version>3.5.0</surefire.version>
 		<jacoco.version>0.8.12</jacoco.version>
-		<sonar.projectKey>openclassrooms777_p8-tour-guide_84780282-2887-428e-a0e7-5c7bc02ffd3e</sonar.projectKey>
-		<sonar.projectName>p8-tour-guide</sonar.projectName>
-		<sonar.qualitygate.wait>true</sonar.qualitygate.wait>
+		<sonar.projectKey>oc-p8-tour-guide</sonar.projectKey>
+		<sonar.organization>bear-code-gitlab</sonar.organization>
 	</properties>
 
 
