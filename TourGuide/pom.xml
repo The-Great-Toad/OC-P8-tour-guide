@@ -20,8 +20,8 @@
 		<java.version>17</java.version>
 		<surefire.version>3.5.0</surefire.version>
 		<jacoco.version>0.8.12</jacoco.version>
-		<sonar.projectKey>oc-p8-tourguide</sonar.projectKey>
-		<sonar.projectName>oc-p8-tourguide</sonar.projectName>
+		<sonar.projectKey>openclassrooms777_p8-tour-guide_7b52e33f-adbf-443c-b3e5-c31997a2a19f</sonar.projectKey>
+		<sonar.projectName>p8-tour-guide</sonar.projectName>
 		<sonar.qualitygate.wait>true</sonar.qualitygate.wait>
 	</properties>
 
