@@ -23,7 +23,7 @@ import com.openclassrooms.tourguide.service.TourGuideService;
 import com.openclassrooms.tourguide.user.User;
 
 @Disabled("For CI/CD pipeline validation")
-public class TestPerformance {
+class TestPerformance {
 
 	/*
 	 * A note on performance improvements:
@@ -49,7 +49,7 @@ public class TestPerformance {
 	 */
 
 	@Test
-	public void highVolumeTrackLocation() {
+	void highVolumeTrackLocation() {
 		GpsUtil gpsUtil = new GpsUtil();
 		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
 
@@ -82,7 +82,7 @@ public class TestPerformance {
 
 
 	@Test
-	public void highVolumeGetRewards() {
+	void highVolumeGetRewards() {
 		GpsUtil gpsUtil = new GpsUtil();
 		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
 
