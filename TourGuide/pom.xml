@@ -20,7 +20,7 @@
 		<java.version>17</java.version>
 		<surefire.version>3.5.0</surefire.version>
 		<jacoco.version>0.8.12</jacoco.version>
-		<sonar.projectKey>tourguide</sonar.projectKey>
+		<sonar.projectKey>p8-tour-guide</sonar.projectKey>
 		<sonar.organization>bear-code-gitlab</sonar.organization>
 	</properties>
 
