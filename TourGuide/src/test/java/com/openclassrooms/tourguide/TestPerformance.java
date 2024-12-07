@@ -22,7 +22,7 @@ import com.openclassrooms.tourguide.service.RewardsService;
 import com.openclassrooms.tourguide.service.TourGuideService;
 import com.openclassrooms.tourguide.user.User;
 
-@Disabled("For CI/CD pipeline validation")
+//@Disabled("For CI/CD pipeline validation")
 class TestPerformance {
 
 	/*
@@ -49,7 +49,7 @@ class TestPerformance {
 	 */
 
 	@Test
-	void highVolumeTrackLocation() {
+	public void highVolumeTrackLocation() {
 		GpsUtil gpsUtil = new GpsUtil();
 		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
 
@@ -82,7 +82,7 @@ class TestPerformance {
 
 
 	@Test
-	void highVolumeGetRewards() {
+	public void highVolumeGetRewards() {
 		GpsUtil gpsUtil = new GpsUtil();
 		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
 
