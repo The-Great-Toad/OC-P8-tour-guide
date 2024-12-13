@@ -15,8 +15,8 @@ public class User {
 	private String phoneNumber;
 	private String emailAddress;
 	private Date latestLocationTimestamp;
-	private final List<VisitedLocation> visitedLocations = new CopyOnWriteArrayList<>();
-	private final List<UserReward> userRewards = new CopyOnWriteArrayList<>();
+	private final CopyOnWriteArrayList<VisitedLocation> visitedLocations = new CopyOnWriteArrayList<>();
+	private final CopyOnWriteArrayList<UserReward> userRewards = new CopyOnWriteArrayList<>();
 	private UserPreferences userPreferences = new UserPreferences();
 	private List<Provider> tripDeals = new ArrayList<>();
 
