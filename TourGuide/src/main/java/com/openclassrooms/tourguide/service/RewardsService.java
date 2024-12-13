@@ -1,6 +1,8 @@
 package com.openclassrooms.tourguide.service;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -30,25 +32,29 @@ public class RewardsService {
 	public void setProximityBuffer(int proximityBuffer) {
 		this.proximityBuffer = proximityBuffer;
 	}
-	
-	public void setDefaultProximityBuffer() {
-		proximityBuffer = defaultProximityBuffer;
-	}
-	
+
 	public void calculateRewards(User user) {
 		List<VisitedLocation> userLocations = user.getVisitedLocations();
 		List<Attraction> attractions = gpsUtil.getAttractions();
-		
-		for(VisitedLocation visitedLocation : userLocations) {
-			for(Attraction attraction : attractions) {
-				if(user.getUserRewards().stream().noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName))
-						&& nearAttraction(visitedLocation, attraction)) {
-					user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
-				}
-			}
+
+		Set<String> rewardedAttractions = user.getUserRewards().stream()
+				.map(r -> r.attraction.attractionName)
+				.collect(Collectors.toSet());
+
+		for (VisitedLocation visitedLocation : userLocations) {
+			attractions.stream()
+					// Filter out attractions that the user has already received rewards for
+					.filter(attraction -> !rewardedAttractions.contains(attraction.attractionName))
+					// Filter attractions that are near the user's visited location
+					.filter(attraction -> nearAttraction(visitedLocation, attraction))
+					// For each eligible attraction, calculate rewards and add them to the user
+					.forEach(attraction -> {
+						int rewardPoints = getRewardPoints(attraction, user);
+						user.addUserReward(new UserReward(visitedLocation, attraction, rewardPoints));
+					});
 		}
 	}
-	
+
 	public boolean isWithinAttractionProximity(Attraction attraction, Location location) {
 		int attractionProximityRange = 200;
 		return !(getDistance(attraction, location) > attractionProximityRange);
