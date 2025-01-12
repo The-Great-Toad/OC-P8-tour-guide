@@ -1,11 +1,7 @@
 package com.openclassrooms.tourguide.service;
 
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -35,8 +31,13 @@ public class RewardsService {
 
 		// Init threads pool size
 		int processors = Runtime.getRuntime().availableProcessors();
-		int poolSize = processors * 10;
+		System.out.println("Available processors: " + processors);
+
+		// Minimum pool size of 50 threads (for CICD)
+		int poolSize = Math.max(50, processors * 10);
 		forkJoinPool = new ForkJoinPool(poolSize);
+
+		System.out.println("Initialized ForkJoinPool with pool size: " + poolSize);
 	}
 	
 	public void setProximityBuffer(int proximityBuffer) {
@@ -51,6 +52,8 @@ public class RewardsService {
 				.map(r -> r.attraction.attractionName)
 				.collect(Collectors.toSet());
 
+//		Map<VisitedLocation, Attraction> toBeRewardAttractions = new HashMap<>();
+
 		for (VisitedLocation visitedLocation : userLocations) {
 			attractions.stream()
 					// Filter out attractions already rewarded
@@ -59,16 +62,37 @@ public class RewardsService {
 					.filter(attraction -> nearAttraction(visitedLocation, attraction))
 					// Calculate rewards and add them to the user
 					.forEach(attraction -> {
+//						toBeRewardAttractions.put(visitedLocation, attraction);
 						int rewardPoints = getRewardPoints(attraction, user);
 						user.addUserReward(new UserReward(visitedLocation, attraction, rewardPoints));
 					});
 		}
+
+//		toBeRewardAttractions.entrySet().parallelStream()
+//				.forEach(entrySet -> {
+//						int rewardPoints = getRewardPoints(entrySet.getValue(), user);
+//						user.addUserReward(new UserReward(entrySet.getKey(), entrySet.getValue(), rewardPoints));
+//				});
 	}
 
 	public void calculateAllUsersRewards(List<User> users) {
-		forkJoinPool.submit(() ->
-				users.parallelStream().forEach(this::calculateRewards)
-		).join();
+		try {
+			// Submit the task to the ForkJoinPool
+			ForkJoinTask<?> task = forkJoinPool.submit(() ->
+					users.parallelStream().forEach(this::calculateRewards)
+			);
+
+			// Wait for the task to complete with a timeout of 20 minutes
+			task.get(20, TimeUnit.MINUTES);
+
+		} catch (TimeoutException e) {
+			System.err.println("calculateAllUsersRewards: Execution exceeded 20 minutes!");
+			throw new RuntimeException("Reward calculation exceeded the allowed time of 20 minutes", e);
+
+		} catch (InterruptedException | ExecutionException e) {
+			System.err.println("calculateAllUsersRewards: An error occurred during execution.");
+			throw new RuntimeException("Error during reward calculation", e);
+		}
 
 //		// Adapt pool size to user's list
 //		ExecutorService executorService = Executors.newFixedThreadPool(
