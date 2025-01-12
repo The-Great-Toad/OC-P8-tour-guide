@@ -2,6 +2,10 @@ package com.openclassrooms.tourguide.service;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -23,10 +27,16 @@ public class RewardsService {
 	private int proximityBuffer = defaultProximityBuffer;
 	private final GpsUtil gpsUtil;
 	private final RewardCentral rewardsCentral;
-	
+	private final ForkJoinPool forkJoinPool;
+
 	public RewardsService(GpsUtil gpsUtil, RewardCentral rewardCentral) {
 		this.gpsUtil = gpsUtil;
 		this.rewardsCentral = rewardCentral;
+
+		// Init threads pool size
+		int processors = Runtime.getRuntime().availableProcessors();
+		int poolSize = processors * 10;
+		forkJoinPool = new ForkJoinPool(poolSize);
 	}
 	
 	public void setProximityBuffer(int proximityBuffer) {
@@ -43,16 +53,41 @@ public class RewardsService {
 
 		for (VisitedLocation visitedLocation : userLocations) {
 			attractions.stream()
-					// Filter out attractions that the user has already received rewards for
+					// Filter out attractions already rewarded
 					.filter(attraction -> !rewardedAttractions.contains(attraction.attractionName))
-					// Filter attractions that are near the user's visited location
+					// Filter attractions near user's visited location
 					.filter(attraction -> nearAttraction(visitedLocation, attraction))
-					// For each eligible attraction, calculate rewards and add them to the user
+					// Calculate rewards and add them to the user
 					.forEach(attraction -> {
 						int rewardPoints = getRewardPoints(attraction, user);
 						user.addUserReward(new UserReward(visitedLocation, attraction, rewardPoints));
 					});
 		}
+	}
+
+	public void calculateAllUsersRewards(List<User> users) {
+		forkJoinPool.submit(() ->
+				users.parallelStream().forEach(this::calculateRewards)
+		).join();
+
+//		// Adapt pool size to user's list
+//		ExecutorService executorService = Executors.newFixedThreadPool(
+//				Math.min(users.size(), Runtime.getRuntime().availableProcessors())
+//		);
+//
+//		// Execute calculateRewards method using multi-threading
+//		users.forEach(user -> executorService.submit(new Thread(() -> calculateRewards(user))));
+//
+//		// Shutting down
+//		executorService.shutdown();
+//		try {
+//			if (!executorService.awaitTermination(20, TimeUnit.MINUTES)) {
+//				executorService.shutdownNow();
+//			}
+//		} catch (InterruptedException e) {
+//			e.printStackTrace();
+//			executorService.shutdownNow();
+//		}
 	}
 
 	public boolean isWithinAttractionProximity(Attraction attraction, Location location) {

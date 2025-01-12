@@ -10,8 +10,8 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
@@ -36,11 +36,21 @@ public class TourGuideService {
 	boolean testMode = true;
 
 	private final SecureRandom random = new SecureRandom();
+//	private final ExecutorService executorService;
+	private final ForkJoinPool forkJoinPool;
 
 	public TourGuideService(GpsUtil gpsUtil, RewardsService rewardsService) {
 		this.gpsUtil = gpsUtil;
 		this.rewardsService = rewardsService;
-		
+
+		// Init threads pool size
+//		int availableProcessors = Runtime.getRuntime().availableProcessors();
+//		this.executorService = Executors.newFixedThreadPool(availableProcessors);
+
+		int processors = Runtime.getRuntime().availableProcessors();
+		int poolSize = processors * 10;
+		forkJoinPool = new ForkJoinPool(poolSize);
+
 		Locale.setDefault(Locale.US);
 
 		if (testMode) {
@@ -113,19 +123,34 @@ public class TourGuideService {
 		return visitedLocation;
 	}
 
-	public CompletableFuture<VisitedLocation> trackUserLocationAsync(User user) {
-		/* Asynchronously fetch the user's location */
-		CompletableFuture<VisitedLocation> visitedLocationFuture = CompletableFuture.supplyAsync(
-				() -> gpsUtil.getUserLocation(user.getUserId())
-		);
+	public List<VisitedLocation> trackAllUsersLocation(List<User> users) {
+		return forkJoinPool.submit(() ->
+				users.parallelStream()
+						.map(this::trackUserLocation)
+						.toList()
+		).join();
 
-		/* Once visitedLocation is fetched, asynchronously calculate rewards */
-		return visitedLocationFuture.thenApplyAsync(visitedLocation -> {
-			user.addToVisitedLocations(visitedLocation);
-			rewardsService.calculateRewards(user);
+//		return users.parallelStream()
+//				.map(this::trackUserLocation)
+//				.collect(Collectors.toList());
 
-			return visitedLocation;
-		});
+//		List<VisitedLocation> visitedLocations = Collections.synchronizedList(new ArrayList<>());
+//		List<CompletableFuture<Void>> futures = new ArrayList<>();
+//
+//		for (User user : users) {
+//			CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
+//				VisitedLocation visitedLocation = trackUserLocation(user);
+//				visitedLocations.add(visitedLocation);
+//				return visitedLocation;
+//			}, executorService).thenAccept(result -> {});
+//
+//			futures.add(future);
+//		}
+//
+//		CompletableFuture<Void> allOf = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+//		allOf.join();
+//
+//		return visitedLocations;
 	}
 
 //	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
