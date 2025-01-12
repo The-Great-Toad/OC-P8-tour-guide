@@ -18,7 +18,7 @@
 
 	<properties>
 		<java.version>17</java.version>
-		<surefire.version>3.5.0</surefire.version>
+		<surefire.version>3.5.2</surefire.version>
 		<jacoco.version>0.8.12</jacoco.version>
 		<sonar.organization>oc-projects</sonar.organization>
 	</properties>
