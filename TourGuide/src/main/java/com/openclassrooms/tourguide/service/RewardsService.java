@@ -76,23 +76,24 @@ public class RewardsService {
 	}
 
 	public void calculateAllUsersRewards(List<User> users) {
-		try {
+//		try {
 			// Submit the task to the ForkJoinPool
-			ForkJoinTask<?> task = forkJoinPool.submit(() ->
+//			ForkJoinTask<?> task =
+					forkJoinPool.submit(() ->
 					users.parallelStream().forEach(this::calculateRewards)
-			);
+			).join();
 
 			// Wait for the task to complete with a timeout of 20 minutes
-			task.get(20, TimeUnit.MINUTES);
+//			task.get(20, TimeUnit.MINUTES);
 
-		} catch (TimeoutException e) {
-			System.err.println("calculateAllUsersRewards: Execution exceeded 20 minutes!");
-			throw new RuntimeException("Reward calculation exceeded the allowed time of 20 minutes", e);
-
-		} catch (InterruptedException | ExecutionException e) {
-			System.err.println("calculateAllUsersRewards: An error occurred during execution.");
-			throw new RuntimeException("Error during reward calculation", e);
-		}
+//		} catch (TimeoutException e) {
+//			System.err.println("calculateAllUsersRewards: Execution exceeded 20 minutes!");
+//			throw new RuntimeException("Reward calculation exceeded the allowed time of 20 minutes", e);
+//
+//		} catch (InterruptedException | ExecutionException e) {
+//			System.err.println("calculateAllUsersRewards: An error occurred during execution.");
+//			throw new RuntimeException("Error during reward calculation", e);
+//		}
 
 //		// Adapt pool size to user's list
 //		ExecutorService executorService = Executors.newFixedThreadPool(
